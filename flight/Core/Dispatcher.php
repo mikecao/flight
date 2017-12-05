@@ -6,7 +6,7 @@
  * @license     MIT, http://flightphp.com/license
  */
 
-namespace flight\core;
+namespace Flight\Core;
 
 /**
  * The Dispatcher class is responsible for dispatching events. Events
@@ -188,8 +188,8 @@ class Dispatcher {
     public static function invokeMethod($func, array &$params = array()) {
         list($class, $method) = $func;
 
-		$instance = is_object($class);
-		
+        $instance = is_object($class);
+
         switch (count($params)) {
             case 0:
                 return ($instance) ?
