@@ -78,6 +78,7 @@ class Flight {
     }
 
     /**
+     * @param bool $legacy legacy routing
      * @return \flight\Engine Application instance
      */
     public static function app() {

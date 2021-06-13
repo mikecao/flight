@@ -1,3 +1,7 @@
+# TODO
+
+* Change README to point to aleferri/flight instead of mikecao/flight (if he doesn't want to merge)
+
 # What is Flight?
 
 Flight is a fast, simple, extensible framework for PHP. Flight enables you to 
@@ -15,9 +19,23 @@ Flight::start();
 
 [Learn more](http://flightphp.com/learn)
 
+# This Branch
+
+This branch provide a viable (at least i think it is viable) and optional middleware stack implementation with the lightest modification to the current code.
+No PSR compliant implementation is provided (Flight isn't PSR compliant anyway).
+Also instead of an interface (like in PSR standard) you can push any callable that has this signature:
+```php 
+function f(\flight\net\Route, array params, \flight\net\Request, \flight\net\Response, \flight\layers\LayersIterator iterator);
+```
+
+# This Branch breaking changes (if other breaking changes exists they are a bug)
+
+* $pass_route parameter in ``` Router::map ``` is removed, in his place a more generic $config parameter is added, if you want to pass the matching route to the callback put ``` 'pass_route' => true ``` inside the $config array parameter.  
+* `PHP 5.2` is not supported anymore, at least `PHP 5.6` is now required
+
 # Requirements
 
-Flight requires `PHP 5.3` or greater.
+Thi branch of Flight requires `PHP 5.6` or greater   
 
 # License
 
@@ -47,8 +65,14 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
 ```
 
-**Note**: If you need to use flight in a subdirectory add the line `RewriteBase /subdir/` just after `RewriteEngine On`.
+For *Apache* modern, set the htdocs path to 'public_html' or 'html' or 'public' or whatever and then put only scripts, styles and a single index.php file.
+Then edit your `.htaccess` file or the conf of your virtual host (a lot better) with the following:
+```
+FallbackResource index.php
+```
 
+**Note**: If you need to use flight in a subdirectory add the line `RewriteBase /subdir/` just after `RewriteEngine On`.
+.
 For *Nginx*, add the following to your server declaration:
 
 ```
@@ -63,13 +87,13 @@ server {
 First include the framework.
 
 ```php
-require 'flight/Flight.php';
+require_once 'flight/Flight.php';
 ```
 
 If you're using Composer, run the autoloader instead.
 
 ```php
-require 'vendor/autoload.php';
+require_once 'vendor/autoload.php';
 ```
 
 Then define a route and assign a function to handle the request.
@@ -255,8 +279,8 @@ Flight::route('/user/*', function(){
 
 If you want to inspect the matching route information, you can request for the route
 object to be passed to your callback by passing in `true` as the third parameter in
-the route method. The route object will always be the last parameter passed to your
-callback function.
+the route method or by including `'pass_route' => true` inside the array you can pass as third paramter. 
+The route object will always be the last parameter passed to your callback function.
 
 ```php
 Flight::route('/', function($route){
@@ -272,6 +296,14 @@ Flight::route('/', function($route){
     // Contains the contents of any '*' used in the URL pattern
     $route->splat;
 }, true);
+```
+
+If you want to specify more parameters for http middleware usage (see later) you can add them as the third parameter
+
+```php
+Flight::route('/', function(){
+    //Now every http middleware interested in your configuration will receive it
+}, [ 'MyKey' => true, 'AnotheryKey' => 2 ]);
 ```
 
 # Extending
@@ -292,6 +324,32 @@ Flight::map('hello', function($name){
 
 // Call your custom method
 Flight::hello('Bob');
+```
+
+You can add a custom route dispatch if you want to perform additional work before real route dispatch
+
+
+```php
+// Map your route dispatch
+
+Flight::map('dispatchRoute', function($route, $params){
+    //Do something instead of directly dispatching the route
+    //when you are done
+    Flight::_dispatchRoute($route, $params);
+});
+```
+
+Or you can use the embedded fully optional LayersStack middlewares dispatcher to achieve what you want
+
+```php
+$stack = new \flight\LayersStack( true ); //true if you don't want to remap the last call, false otherwise
+
+$stack->push( [ MyCoolCachingMiddleware::class, 'process' ] );
+$stack->push( [ MyCoolVisibilityMiddleware::class, 'process' ] );
+$stack->push( [ MyCoolErrorsMiddleware::class, 'process' ] );
+
+Flight::map( 'dispatchRoute', [ $stack, 'dispatch' ] );
+
 ```
 
 ## Registering Classes
